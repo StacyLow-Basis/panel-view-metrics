@@ -13,16 +13,16 @@ interface MetricCardProps {
   currentValue?: number;
 }
 
-export const MetricCard = ({ 
-  title, 
-  value, 
-  icon: Icon, 
-  change, 
+export const MetricCard = ({
+  title,
+  value,
+  icon: Icon,
+  change,
   changeType = "neutral",
   showComparison = false,
   comparisonPeriod,
   previousValue,
-  currentValue
+  currentValue,
 }: MetricCardProps) => {
   const getChangeColor = () => {
     switch (changeType) {
@@ -36,16 +36,21 @@ export const MetricCard = ({
   };
 
   const calculateChange = () => {
-    if (!showComparison || previousValue === undefined || currentValue === undefined) {
+    if (
+      !showComparison ||
+      previousValue === undefined ||
+      currentValue === undefined
+    ) {
       return null;
     }
 
     const difference = currentValue - previousValue;
-    const percentageChange = previousValue > 0 ? ((difference / previousValue) * 100) : 0;
-    
+    const percentageChange =
+      previousValue > 0 ? (difference / previousValue) * 100 : 0;
+
     let icon = Minus;
     let colorClass = "text-muted-foreground";
-    
+
     if (difference > 0) {
       icon = TrendingUp;
       colorClass = "text-green-500";
@@ -60,14 +65,14 @@ export const MetricCard = ({
       icon,
       colorClass,
       isPositive: difference > 0,
-      isNegative: difference < 0
+      isNegative: difference < 0,
     };
   };
 
   const changeData = calculateChange();
 
   return (
-    <Card className="relative overflow-hidden">
+    <Card className="relative overflow-hidden border-0 shadow-sm hover:shadow-md transition-shadow">
       <CardContent className="p-6">
         <div className="flex items-center justify-between">
           <div className="space-y-2">
@@ -75,25 +80,34 @@ export const MetricCard = ({
             <p className="text-2xl font-bold text-foreground">{value}</p>
             {showComparison && changeData ? (
               <div className="flex items-center gap-1">
-                <changeData.icon className={`w-3 h-3 ${changeData.colorClass}`} />
+                <changeData.icon
+                  className={`w-3 h-3 ${changeData.colorClass}`}
+                />
                 <p className={`text-xs font-medium ${changeData.colorClass}`}>
-                  {changeData.isPositive ? '+' : changeData.isNegative ? '-' : ''}
-                  {changeData.difference} ({changeData.percentage.toFixed(1)}%) vs {comparisonPeriod}
+                  {changeData.isPositive
+                    ? "+"
+                    : changeData.isNegative
+                      ? "-"
+                      : ""}
+                  {changeData.difference} ({changeData.percentage.toFixed(1)}%)
+                  vs {comparisonPeriod}
                 </p>
               </div>
-            ) : change && (
-              <p className={`text-xs font-medium ${getChangeColor()}`}>
-                {change}
-              </p>
+            ) : (
+              change && (
+                <p className={`text-xs font-medium ${getChangeColor()}`}>
+                  {change}
+                </p>
+              )
             )}
           </div>
-          <div className="flex items-center justify-center w-12 h-12 rounded-lg bg-primary/10">
+          <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-primary/10">
             <Icon className="w-6 h-6 text-primary" />
           </div>
         </div>
-        
-        {/* Subtle gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-r from-primary/[0.02] to-transparent pointer-events-none" />
+
+        {/* Subtle gradient overlay - Basis lime accent */}
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/[0.03] via-transparent to-transparent pointer-events-none" />
       </CardContent>
     </Card>
   );

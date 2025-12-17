@@ -5,9 +5,19 @@ import { toast } from "@/hooks/use-toast";
 import { PanelChart } from "@/components/dashboard/PanelChart";
 import { TimeSelector } from "@/components/dashboard/TimeSelector";
 import { MetricCard } from "@/components/dashboard/MetricCard";
-import { MetricsTimeSelector, MetricsTimeRange } from "@/components/dashboard/MetricsTimeSelector";
-import { Activity, TrendingUp, Calendar, Target } from "lucide-react";
+import {
+  MetricsTimeSelector,
+  MetricsTimeRange,
+} from "@/components/dashboard/MetricsTimeSelector";
+import {
+  Activity,
+  TrendingUp,
+  Calendar,
+  Target,
+  RefreshCw,
+} from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { BasisLogo } from "@/components/BasisLogo";
 
 interface PanelData {
   date: string;
@@ -21,7 +31,8 @@ const Dashboard = () => {
   const [currentCount, setCurrentCount] = useState(0);
   const [timeRange, setTimeRange] = useState<TimeRange>("1M");
   const [loading, setLoading] = useState(false);
-  const [metricsTimeRange, setMetricsTimeRange] = useState<MetricsTimeRange>("1M");
+  const [metricsTimeRange, setMetricsTimeRange] =
+    useState<MetricsTimeRange>("1M");
   const [currentPeriodCount, setCurrentPeriodCount] = useState(0);
   const [previousPeriodCount, setPreviousPeriodCount] = useState(0);
 
@@ -32,50 +43,71 @@ const Dashboard = () => {
 
   const getMetricsPeriodLabel = (range: MetricsTimeRange): string => {
     switch (range) {
-      case "1D": return "previous day";
-      case "1W": return "previous week";
-      case "1M": return "previous month";
-      case "3M": return "previous 3 months";
-      case "6M": return "previous 6 months";
-      case "1Y": return "previous year";
+      case "1D":
+        return "previous day";
+      case "1W":
+        return "previous week";
+      case "1M":
+        return "previous month";
+      case "3M":
+        return "previous 3 months";
+      case "6M":
+        return "previous 6 months";
+      case "1Y":
+        return "previous year";
     }
   };
 
-  const calculatePeriodCounts = (panels: { created_at: string }[], range: MetricsTimeRange) => {
+  const calculatePeriodCounts = (
+    panels: { created_at: string }[],
+    range: MetricsTimeRange,
+  ) => {
     const now = new Date();
     let days = 30;
-    
+
     switch (range) {
-      case "1D": days = 1; break;
-      case "1W": days = 7; break;
-      case "1M": days = 30; break;
-      case "3M": days = 90; break;
-      case "6M": days = 180; break;
-      case "1Y": days = 365; break;
+      case "1D":
+        days = 1;
+        break;
+      case "1W":
+        days = 7;
+        break;
+      case "1M":
+        days = 30;
+        break;
+      case "3M":
+        days = 90;
+        break;
+      case "6M":
+        days = 180;
+        break;
+      case "1Y":
+        days = 365;
+        break;
     }
 
     // Current period: now - days to now
     const currentPeriodStart = new Date(now);
     currentPeriodStart.setDate(currentPeriodStart.getDate() - days);
-    
+
     // Previous period: (now - 2*days) to (now - days)
     const previousPeriodStart = new Date(now);
-    previousPeriodStart.setDate(previousPeriodStart.getDate() - (days * 2));
+    previousPeriodStart.setDate(previousPeriodStart.getDate() - days * 2);
     const previousPeriodEnd = new Date(currentPeriodStart);
 
-    const currentPeriodPanels = panels.filter(panel => {
+    const currentPeriodPanels = panels.filter((panel) => {
       const panelDate = new Date(panel.created_at);
       return panelDate >= currentPeriodStart && panelDate <= now;
     });
 
-    const previousPeriodPanels = panels.filter(panel => {
+    const previousPeriodPanels = panels.filter((panel) => {
       const panelDate = new Date(panel.created_at);
       return panelDate >= previousPeriodStart && panelDate < previousPeriodEnd;
     });
 
     return {
       current: currentPeriodPanels.length,
-      previous: previousPeriodPanels.length
+      previous: previousPeriodPanels.length,
     };
   };
 
@@ -84,24 +116,27 @@ const Dashboard = () => {
     try {
       // Fetch both count and actual panel data with timestamps
       const { data: panels, error } = await supabase
-        .from('panels')
-        .select('created_at')
-        .order('created_at', { ascending: true });
+        .from("panels")
+        .select("created_at")
+        .order("created_at", { ascending: true });
 
       if (error) throw error;
 
       const panelCount = panels?.length || 0;
       setCurrentCount(panelCount);
-      
+
       // Calculate period-based counts for comparison using metrics time range
-      const periodCounts = calculatePeriodCounts(panels || [], metricsTimeRange);
+      const periodCounts = calculatePeriodCounts(
+        panels || [],
+        metricsTimeRange,
+      );
       setCurrentPeriodCount(periodCounts.current);
       setPreviousPeriodCount(periodCounts.previous);
-      
+
       // Process real historical data based on actual creation dates
       const historicalData = processRealHistoricalData(panels || [], timeRange);
       setPanelData(historicalData);
-      
+
       toast({
         title: "Data loaded",
         description: `Found ${panelCount} installed panels`,
@@ -117,18 +152,29 @@ const Dashboard = () => {
     setLoading(false);
   };
 
-  const processRealHistoricalData = (panels: { created_at: string }[], range: TimeRange): PanelData[] => {
+  const processRealHistoricalData = (
+    panels: { created_at: string }[],
+    range: TimeRange,
+  ): PanelData[] => {
     if (!panels.length) return [];
 
     const now = new Date();
     const data: PanelData[] = [];
     let days = 30;
-    
+
     switch (range) {
-      case "3M": days = 90; break;
-      case "6M": days = 180; break;
-      case "1Y": days = 365; break;
-      case "ALL": days = 730; break;
+      case "3M":
+        days = 90;
+        break;
+      case "6M":
+        days = 180;
+        break;
+      case "1Y":
+        days = 365;
+        break;
+      case "ALL":
+        days = 730;
+        break;
     }
 
     // Create date range for the chart
@@ -139,43 +185,61 @@ const Dashboard = () => {
     for (let i = 0; i <= days; i++) {
       const currentDate = new Date(startDate);
       currentDate.setDate(currentDate.getDate() + i);
-      const dateStr = currentDate.toISOString().split('T')[0];
-      
+      const dateStr = currentDate.toISOString().split("T")[0];
+
       // Count panels installed up to this date
-      const cumulativeCount = panels.filter(panel => {
-        const panelDate = new Date(panel.created_at).toISOString().split('T')[0];
+      const cumulativeCount = panels.filter((panel) => {
+        const panelDate = new Date(panel.created_at)
+          .toISOString()
+          .split("T")[0];
         return panelDate <= dateStr;
       }).length;
-      
+
       data.push({
         date: dateStr,
-        count: cumulativeCount
+        count: cumulativeCount,
       });
     }
-    
+
     return data;
   };
 
-
   return (
-    <div className="min-h-screen bg-background p-4 md:p-6">
-      <div className="max-w-7xl mx-auto space-y-6">
-        {/* Header */}
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-3xl font-bold text-foreground">Installed Panels Dashboard</h1>
-            <p className="text-muted-foreground">Real-time tracking of the total number of panels installed</p>
+    <div className="min-h-screen bg-background p-4 md:p-8">
+      <div className="max-w-7xl mx-auto space-y-8">
+        {/* Header with Basis branding */}
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <div className="space-y-2">
+            <div className="flex items-center gap-4">
+              <BasisLogo className="text-foreground" width={120} height={28} />
+              <div className="h-6 w-px bg-border" />
+              <span className="text-sm font-medium text-muted-foreground">
+                Panel Dashboard
+              </span>
+            </div>
+            <h1 className="text-2xl md:text-3xl font-bold text-foreground">
+              Installed Panels
+            </h1>
+            <p className="text-muted-foreground">
+              Real-time tracking of panel installations
+            </p>
           </div>
-          <Button variant="outline" onClick={fetchPanelCount} disabled={loading}>
-            {loading ? "Loading..." : "Refresh Data"}
+          <Button
+            variant="outline"
+            onClick={fetchPanelCount}
+            disabled={loading}
+            className="gap-2"
+          >
+            <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+            {loading ? "Loading..." : "Refresh"}
           </Button>
         </div>
 
         {/* Metrics Section */}
         <div className="space-y-4">
-          <div className="flex justify-between items-center">
-            <h2 className="text-xl font-semibold text-foreground">Metrics</h2>
-            <MetricsTimeSelector 
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+            <h2 className="text-lg font-semibold text-foreground">Overview</h2>
+            <MetricsTimeSelector
               currentRange={metricsTimeRange}
               onRangeChange={setMetricsTimeRange}
             />
@@ -197,7 +261,9 @@ const Dashboard = () => {
               showComparison={true}
               comparisonPeriod={getMetricsPeriodLabel(metricsTimeRange)}
               currentValue={currentCount}
-              previousValue={currentCount - currentPeriodCount + previousPeriodCount}
+              previousValue={
+                currentCount - currentPeriodCount + previousPeriodCount
+              }
             />
             <MetricCard
               title={`Current ${metricsTimeRange === "1D" ? "Day" : metricsTimeRange === "1W" ? "Week" : metricsTimeRange === "1M" ? "Month" : metricsTimeRange === "3M" ? "3 Months" : metricsTimeRange === "6M" ? "6 Months" : "Year"}`}
@@ -210,7 +276,13 @@ const Dashboard = () => {
             />
             <MetricCard
               title="Growth Rate"
-              value={currentPeriodCount > previousPeriodCount ? "Increasing" : currentPeriodCount < previousPeriodCount ? "Decreasing" : "Stable"}
+              value={
+                currentPeriodCount > previousPeriodCount
+                  ? "Increasing"
+                  : currentPeriodCount < previousPeriodCount
+                    ? "Decreasing"
+                    : "Stable"
+              }
               icon={TrendingUp}
               showComparison={true}
               comparisonPeriod={getMetricsPeriodLabel(metricsTimeRange)}
@@ -222,12 +294,22 @@ const Dashboard = () => {
 
         {/* Main Chart */}
         <Card className="p-6">
-          <div className="flex justify-between items-center mb-6">
-            <CardTitle>Installed Panels Over Time</CardTitle>
-            <TimeSelector currentRange={timeRange} onRangeChange={setTimeRange} />
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+            <CardTitle className="text-lg">Installation Trend</CardTitle>
+            <TimeSelector
+              currentRange={timeRange}
+              onRangeChange={setTimeRange}
+            />
           </div>
           <PanelChart data={panelData} timeRange={timeRange} />
         </Card>
+
+        {/* Footer */}
+        <div className="flex justify-center pt-4">
+          <p className="text-xs text-muted-foreground">
+            Powered by Basis Smart Panel Technology
+          </p>
+        </div>
       </div>
     </div>
   );
