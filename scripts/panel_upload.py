@@ -3,7 +3,9 @@
 import os
 import sys
 from datetime import datetime
+
 import requests
+
 from basisvectors.client import ClientSession
 
 # Configuration
